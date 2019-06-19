@@ -1,0 +1,43 @@
+Installation
+------------
+
+This iSCSI target implementation requires a recent 2.4 kernel. The
+kernel itself requires a small patch:
+
+	cd <kernel-src>/linux-2.4
+	patch -p0 < <iscsi-target-src>/kernel.2.4.??.diff
+
+The archive includes various version of the kernel patch for several
+kernel versions. After applying the patch recompile the kernel and
+install it.
+
+The iSCSI target consists of a kernel module and a daemon. The
+compilation of the kernel module requires the path to above kernel
+sources:
+
+	make KERNELSRC=<kernel-src>
+
+The path can also be set by editing the main Makefile. This will build
+the module and the daemon. To install both use:
+
+	make KERNELSRC=<kernel-src> install
+
+The kernel module will be install in the module directory of the kernel
+and after the next reboot, it can be loaded with "modprobe
+iscsi_trgt_mod", the daemon will be installed as iscsi_trgtd under
+/usr/sbin.
+
+Configuration
+-------------
+
+The daemon is configured via the configuration file /etc/iscsid.config.
+See the example file for the current syntax.
+The example iscsid.rc can be used to automatically start and stop the
+iSCSI targets.
+
+Misc
+----
+During the development the following iSCSI initiator drivers were used
+and so are known to work with this implementation: the Linux driver by
+Cisco available from http://linux-iscsi.sourceforge.net/ and the Windows
+driver by Microsoft available from http://www.microsoft.com/downloads/

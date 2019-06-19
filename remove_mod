@@ -1,0 +1,37 @@
+sync
+for c in /proc/iscsi/target/*/session/*/conn/*/conn; do
+	test -f $c || continue
+	eval `echo $c | sed 's,\(.*\)conn/\(.*\)/conn,s=\1session;i=\2,'`
+	echo conn remove $i > $s
+	#echo remove > $l
+done
+sleep 1
+for s in /proc/iscsi/target/*/session/*/session; do
+	test -f $s || continue
+	eval `echo $s | sed 's,\(.*\)session/\(.*\)/session,t=\1target;i=\2,'`
+	echo session remove $i > $t
+	#echo remove > $s
+done
+sleep 1
+for l in /proc/iscsi/target/*/lun/*/lun; do
+	test -f $l || continue
+	eval `echo $l | sed 's,\(.*\)lun/\(.*\)/lun,t=\1target;i=\2,'`
+	echo device detach $i > $t
+	#echo remove > $l
+done
+sleep 1
+for t in /proc/iscsi/target/*/target; do
+	test -f $t || continue
+	eval `echo $t | sed 's,.*target/\(.*\)/target,i=\1,'`
+	echo target remove $i > /proc/iscsi/iscsi
+	#echo remove > $t
+done
+sleep 1
+for d in /proc/iscsi/device/*/device; do
+	test -f $d || continue
+	eval `echo $d | sed 's,.*device/\(.*\)/device,i=\1,'`
+	echo device remove $i > /proc/iscsi/iscsi
+	#echo remove > $d
+done
+sleep 1
+rmmod iscsi_trgt_mod

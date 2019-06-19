@@ -1,0 +1,28 @@
+#! /bin/sh
+#
+DAEMON=/usr/sbin/iscsi_trgtd
+DESC="iSCSI target"
+
+test -x $DAEMON || exit 0
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC"
+	if [ -f /proc/modules ]; then
+		grep -q ^iscsi_trgt_mod /proc/modules || modprobe iscsi_trgt_mod
+	fi
+	$DAEMON
+	echo "."
+	;;
+  stop)
+	echo -n "Stopping $DESC"
+	kill `cat /var/run/iscsi_trgt.pid`
+	echo "."
+	;;
+  restart)
+	/bin/sh $0 stop
+	/bin/sh $0 start
+	;;
+esac
+
+exit 0

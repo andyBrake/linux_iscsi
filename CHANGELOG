@@ -1,0 +1,23 @@
+2003-10-15
+
+- first public release
+
+2003-11-11
+
+- patch from Fujita Tomonori <tomof@acm.org> to fix compile problem
+  with highmem kernels and an accept fix for iscsid.
+- remove unused prepare/commit write functions
+
+2004-01-16
+
+- various stability fixes
+- add "TargetPortalGroupTag" during login (Fujita Tomonori <tomof@acm.org>)
+- set TSIH in final login pdu (Fujita Tomonori <tomof@acm.org>)
+
+2004-02-10
+- new write locking, allocating pages and taking page lock is delayed as much as possible
+- this also fixed a dead lock during write
+
+2004-02-11
+- correctly handle configured target options
+- fix async allocation for unsolicited data

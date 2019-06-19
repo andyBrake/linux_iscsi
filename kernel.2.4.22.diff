@@ -1,0 +1,84 @@
+Index: include/linux/mm.h
+===================================================================
+RCS file: /home/other/cvs/linux/linux-2.4/include/linux/mm.h,v
+retrieving revision 1.1.1.29
+diff -u -p -r1.1.1.29 mm.h
+--- include/linux/mm.h	25 Aug 2003 12:21:50 -0000	1.1.1.29
++++ include/linux/mm.h	10 Oct 2003 08:24:40 -0000
+@@ -300,6 +300,7 @@ typedef struct page {
+ #define PG_reserved		14
+ #define PG_launder		15	/* written out by VM pressure.. */
+ #define PG_fs_1			16	/* Filesystem specific */
++#define PG_async		17
+ 
+ #ifndef arch_set_page_uptodate
+ #define arch_set_page_uptodate(page)
+Index: include/linux/pagemap.h
+===================================================================
+RCS file: /home/other/cvs/linux/linux-2.4/include/linux/pagemap.h,v
+retrieving revision 1.1.1.14
+diff -u -p -r1.1.1.14 pagemap.h
+--- include/linux/pagemap.h	25 Aug 2003 12:21:53 -0000	1.1.1.14
++++ include/linux/pagemap.h	10 Oct 2003 08:24:40 -0000
+@@ -109,6 +109,8 @@ static inline struct page *grab_cache_pa
+ 
+ 
+ extern struct page * grab_cache_page_nowait (struct address_space *, unsigned long);
++extern struct page *try_grab_cache_page(struct address_space*, unsigned long,
++					struct page **);
+ 
+ typedef int filler_t(void *, struct page*);
+ 
+Index: kernel/ksyms.c
+===================================================================
+RCS file: /home/other/cvs/linux/linux-2.4/kernel/ksyms.c,v
+retrieving revision 1.1.1.34
+diff -u -p -r1.1.1.34 ksyms.c
+--- kernel/ksyms.c	25 Aug 2003 12:22:08 -0000	1.1.1.34
++++ kernel/ksyms.c	25 Aug 2003 13:41:54 -0000
+@@ -268,6 +268,7 @@ EXPORT_SYMBOL(__find_get_page);
+ EXPORT_SYMBOL(__find_lock_page);
+ EXPORT_SYMBOL(find_or_create_page);
+ EXPORT_SYMBOL(grab_cache_page_nowait);
++EXPORT_SYMBOL(try_grab_cache_page);
+ EXPORT_SYMBOL(read_cache_page);
+ EXPORT_SYMBOL(set_page_dirty);
+ EXPORT_SYMBOL(mark_page_accessed);
+Index: mm/filemap.c
+===================================================================
+RCS file: /home/other/cvs/linux/linux-2.4/mm/filemap.c,v
+retrieving revision 1.1.1.33
+diff -u -p -r1.1.1.33 filemap.c
+--- mm/filemap.c	25 Aug 2003 12:22:13 -0000	1.1.1.33
++++ mm/filemap.c	25 Aug 2003 13:41:55 -0000
+@@ -1089,6 +1089,30 @@ struct page *grab_cache_page_nowait(stru
+ 	return page;
+ }
+ 
++struct page *try_grab_cache_page(struct address_space *mapping, unsigned long index,
++				 struct page **cached_page)
++{
++	struct page *page;
++	struct page **hash = page_hash(mapping, index);
++
++	spin_lock(&pagecache_lock);
++	page = __find_page_nolock(mapping, index, *hash);
++	if (!page) {
++		page = cached_page ? *cached_page : NULL;
++		if (page) {
++			*cached_page = NULL;
++			__add_to_page_cache(page, mapping, index, hash);
++			spin_unlock(&pagecache_lock);
++			lru_cache_add(page);
++		} else
++			spin_unlock(&pagecache_lock);
++	} else {
++		page_cache_get(page);
++		spin_unlock(&pagecache_lock);
++	}
++	return page;
++}
++
+ #if 0
+ #define PROFILE_READAHEAD
+ #define DEBUG_READAHEAD
